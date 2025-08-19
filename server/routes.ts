@@ -220,6 +220,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Additional column lineage routes for upstream/downstream
+  app.get("/api/columns", async (req, res) => {
+    try {
+      const columns = await storage.getAllColumns();
+      res.json(columns);
+    } catch (error) {
+      console.error("Error fetching all columns:", error);
+      res.status(500).json({ message: "Failed to fetch columns" });
+    }
+  });
+
+  app.get("/api/column-lineage/upstream/:columnId", async (req, res) => {
+    try {
+      const { columnId } = req.params;
+      const upstreamLineage = await storage.getUpstreamColumnLineage(columnId);
+      res.json(upstreamLineage);
+    } catch (error) {
+      console.error("Error fetching upstream column lineage:", error);
+      res.status(500).json({ message: "Failed to fetch upstream column lineage" });
+    }
+  });
+
+  app.get("/api/column-lineage/downstream/:columnId", async (req, res) => {
+    try {
+      const { columnId } = req.params;
+      const downstreamLineage = await storage.getDownstreamColumnLineage(columnId);
+      res.json(downstreamLineage);
+    } catch (error) {
+      console.error("Error fetching downstream column lineage:", error);
+      res.status(500).json({ message: "Failed to fetch downstream column lineage" });
+    }
+  });
+
   // Table Lineage routes
   app.get("/api/table-lineage", async (req, res) => {
     try {
