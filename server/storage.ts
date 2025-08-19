@@ -76,6 +76,11 @@ export interface IStorage {
   getProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
+
+  // Additional Column Operations
+  getAllColumns(): Promise<Column[]>;
+  getUpstreamColumnLineage(columnId: string): Promise<ColumnLineage[]>;
+  getDownstreamColumnLineage(columnId: string): Promise<ColumnLineage[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -738,6 +743,23 @@ export class DatabaseStorage implements IStorage {
   async createProject(insertProject: InsertProject): Promise<Project> {
     const [project] = await db.insert(projects).values(insertProject).returning();
     return project;
+  }
+
+  // Additional Column Operations
+  async getAllColumns(): Promise<Column[]> {
+    return await db.select().from(columns).orderBy(columns.name);
+  }
+
+  async getUpstreamColumnLineage(columnId: string): Promise<ColumnLineage[]> {
+    return await db.select().from(columnLineage)
+      .where(eq(columnLineage.targetColumnId, columnId))
+      .orderBy(desc(columnLineage.createdAt));
+  }
+
+  async getDownstreamColumnLineage(columnId: string): Promise<ColumnLineage[]> {
+    return await db.select().from(columnLineage)
+      .where(eq(columnLineage.sourceColumnId, columnId))
+      .orderBy(desc(columnLineage.createdAt));
   }
 }
 
