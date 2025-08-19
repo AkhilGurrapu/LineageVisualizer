@@ -23,7 +23,10 @@ import {
   type Column 
 } from "@shared/schema";
 import EnhancedTableNode from "./enhanced-table-node";
-// Removed unused components for cleaner, focused interface
+import FileTree from "./file-tree";
+import CanvasControls from "./canvas-controls";
+import MiniMap from "./mini-map";
+import ColumnLineagePanel from "./column-lineage-panel";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -45,6 +48,10 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
   const [highlightedColumns, setHighlightedColumns] = useState<Set<string>>(new Set());
   const [highlightedTables, setHighlightedTables] = useState<Set<string>>(new Set());
   const [lineageMode, setLineageMode] = useState<'table' | 'column'>('table');
+  const [showLineagePanel, setShowLineagePanel] = useState(false);
+  const [showFileTree, setShowFileTree] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(true);
+  const [autoLayout, setAutoLayout] = useState(true);
   const reactFlowInstance = useReactFlow();
 
   // Fetch column lineage data
@@ -63,6 +70,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setSelectedColumn(columnId);
     setSelectedTable(tableId);
     setLineageMode('column');
+    setShowLineagePanel(true);
 
     try {
       // Fetch upstream and downstream lineage for the selected column
@@ -104,6 +112,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setHighlightedColumns(new Set());
     setHighlightedTables(new Set());
     setLineageMode('table');
+    setShowLineagePanel(false);
   }, []);
 
   // Convert tables to React Flow nodes with enhanced data
@@ -348,7 +357,18 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         <Controls />
       </ReactFlow>
 
-      {/* Enhanced lineage visualization focused on Snowflake-style objects */}
+      <FileTree project={project} />
+      <CanvasControls />
+      <MiniMap />
+      
+      {/* Column Lineage Panel */}
+      {showLineagePanel && selectedColumn && (
+        <ColumnLineagePanel
+          columnId={selectedColumn}
+          tableId={selectedTable}
+          onClose={() => setShowLineagePanel(false)}
+        />
+      )}
     </div>
   );
 }
