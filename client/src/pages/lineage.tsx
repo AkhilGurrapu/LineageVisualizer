@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Table, type Column, type LineageConnection, type Project } from "@shared/schema";
+import { type Table, type Column, type TableLineage, type Project } from "@shared/schema";
 import Sidebar from "@/components/lineage/sidebar";
 import TopBar from "@/components/lineage/topbar";
 import LineageCanvas from "@/components/lineage/lineage-canvas";
@@ -13,8 +13,8 @@ export default function LineagePage() {
     queryKey: ['/api/projects'],
   });
 
-  const { data: connections = [], isLoading: connectionsLoading } = useQuery<LineageConnection[]>({
-    queryKey: ['/api/lineage-connections'],
+  const { data: connections = [], isLoading: connectionsLoading } = useQuery<TableLineage[]>({
+    queryKey: ['/api/table-lineage'],
   });
 
   const isLoading = tablesLoading || projectsLoading || connectionsLoading;
