@@ -17,28 +17,25 @@ import { useQuery } from "@tanstack/react-query";
 
 import { 
   type Table, 
-  type LineageConnection, 
+  type TableLineage, 
   type Project, 
   type ColumnLineage,
   type Column 
 } from "@shared/schema";
-import TableNode from "./table-node";
-import FileTree from "./file-tree";
-import CanvasControls from "./canvas-controls";
-import MiniMap from "./mini-map";
-import ColumnLineagePanel from "./column-lineage-panel";
+import EnhancedTableNode from "./enhanced-table-node";
+// Removed unused components for cleaner, focused interface
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Target, GitBranch, Zap, RotateCcw, Info } from "lucide-react";
 
 const nodeTypes = {
-  table: TableNode,
+  table: EnhancedTableNode,
 };
 
 interface LineageCanvasProps {
   tables: Table[];
-  connections: LineageConnection[];
+  connections: TableLineage[];
   project?: Project;
 }
 
@@ -48,8 +45,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
   const [highlightedColumns, setHighlightedColumns] = useState<Set<string>>(new Set());
   const [highlightedTables, setHighlightedTables] = useState<Set<string>>(new Set());
   const [lineageMode, setLineageMode] = useState<'table' | 'column'>('table');
-  const [showLineagePanel, setShowLineagePanel] = useState(false);
-
   const reactFlowInstance = useReactFlow();
 
   // Fetch column lineage data
@@ -68,7 +63,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setSelectedColumn(columnId);
     setSelectedTable(tableId);
     setLineageMode('column');
-    setShowLineagePanel(true);
 
     try {
       // Fetch upstream and downstream lineage for the selected column
@@ -110,7 +104,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setHighlightedColumns(new Set());
     setHighlightedTables(new Set());
     setLineageMode('table');
-    setShowLineagePanel(false);
   }, []);
 
   // Convert tables to React Flow nodes with enhanced data
@@ -118,7 +111,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     return tables.map((table) => ({
       id: table.id,
       type: 'table',
-      position: table.position as { x: number; y: number },
+      position: table.position ? table.position as { x: number; y: number } : { x: 0, y: 0 },
       data: { 
         table,
         isConnectable: true,
@@ -127,13 +120,17 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         onColumnSelect: handleColumnSelect,
         isHighlighted: highlightedTables.has(table.id),
         lineageLevel: selectedTable === table.id ? 'source' : 
-                     highlightedTables.has(table.id) ? 'target' : null
+                     highlightedTables.has(table.id) ? 'target' : null,
+        onExpand: (tableId: string, expanded: boolean) => {
+          // Handle table expansion state
+          console.log(`Table ${tableId} ${expanded ? 'expanded' : 'collapsed'}`);
+        }
       },
     }));
   }, [tables, selectedColumn, highlightedColumns, highlightedTables, selectedTable, handleColumnSelect]);
 
   // Enhanced edge styling for column lineage
-  const getEdgeStyle = useCallback((connection: LineageConnection) => {
+  const getEdgeStyle = useCallback((connection: TableLineage) => {
     const isHighlighted = highlightedTables.has(connection.sourceTableId) || 
                          highlightedTables.has(connection.targetTableId);
     
@@ -351,18 +348,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         <Controls />
       </ReactFlow>
 
-      <FileTree project={project} />
-      <CanvasControls />
-      <MiniMap />
-      
-      {/* Column Lineage Panel */}
-      {showLineagePanel && selectedColumn && (
-        <ColumnLineagePanel
-          columnId={selectedColumn}
-          tableId={selectedTable}
-          onClose={() => setShowLineagePanel(false)}
-        />
-      )}
+      {/* Enhanced lineage visualization focused on Snowflake-style objects */}
     </div>
   );
 }
