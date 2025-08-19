@@ -54,8 +54,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
 
   // Fetch column lineage data
   const { data: columnLineageData = [], isLoading: isColumnLineageLoading } = useQuery<ColumnLineage[]>({
-    queryKey: ['/api/column-lineage'],
-    queryParams: { withDetails: 'true' }
+    queryKey: ['/api/column-lineage?withDetails=true']
   });
 
   // Get all columns for highlighting
@@ -72,12 +71,15 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setShowLineagePanel(true);
 
     try {
-      // Fetch column lineage for the selected column
-      const response = await apiRequest('GET', '/api/column-lineage', {
-        params: { columnId, withDetails: 'true' }
-      });
+      // Fetch upstream and downstream lineage for the selected column
+      const [upstreamResponse, downstreamResponse] = await Promise.all([
+        apiRequest('GET', `/api/column-lineage/upstream/${columnId}`),
+        apiRequest('GET', `/api/column-lineage/downstream/${columnId}`)
+      ]);
       
-      const lineageData = response as ColumnLineage[];
+      const upstreamData = await upstreamResponse.json() as ColumnLineage[];
+      const downstreamData = await downstreamResponse.json() as ColumnLineage[];
+      const lineageData = [...upstreamData, ...downstreamData];
       
       // Extract highlighted columns and tables from lineage
       const highlightedCols = new Set<string>();
