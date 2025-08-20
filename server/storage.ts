@@ -1,17 +1,17 @@
+import { db } from "./db";
 import { 
-  databases, schemas, tables, columns, columnLineage, tableLineage, 
-  roles, users, userRoles, dataAccessPolicies, dataQualityRules, projects,
+  databases, schemas, tables, columns, columnLineage, tableLineage,
+  users, roles, userRoles, dataAccessPolicies, dataQualityRules, projects,
   type Database, type Schema, type Table, type Column, type ColumnLineage, type TableLineage,
-  type Role, type User, type UserRole, type DataAccessPolicy, type DataQualityRule, type Project,
-  type InsertDatabase, type InsertSchema, type InsertTable, type InsertColumn, type InsertColumnLineage, 
-  type InsertTableLineage, type InsertRole, type InsertUser, type InsertUserRole, 
-  type InsertDataAccessPolicy, type InsertDataQualityRule, type InsertProject,
+  type User, type Role, type UserRole, type DataAccessPolicy, type DataQualityRule, type Project,
+  type InsertDatabase, type InsertSchema, type InsertTable, type InsertColumn, 
+  type InsertColumnLineage, type InsertTableLineage, type InsertUser, type InsertRole,
+  type InsertUserRole, type InsertDataAccessPolicy, type InsertDataQualityRule, type InsertProject,
   type TableWithSchema, type ColumnWithTable, type ColumnLineageWithDetails, type UserWithRoles
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, inArray, desc, asc } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { eq, desc, asc } from "drizzle-orm";
 
+// Storage Interface - defines all operations
 export interface IStorage {
   // Database Operations
   getDatabases(): Promise<Database[]>;
@@ -88,332 +88,8 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   constructor() {
-    // Initialize with sample data when instantiated
-    this.initializeSampleData();
-  }
-
-  private async initializeSampleData() {
-    // Check if data already exists
-    const existingDatabases = await db.select().from(databases).limit(1);
-    if (existingDatabases.length > 0) {
-      return; // Data already exists
-    }
-
-    try {
-      // Create sample database
-      const [analyticsDb] = await db.insert(databases).values({
-        name: "analytics_warehouse",
-        type: "snowflake",
-        description: "Main analytics data warehouse",
-        environment: "prod"
-      }).returning();
-
-      // Create sample roles
-      const [dataAnalystRole] = await db.insert(roles).values({
-        name: "data_analyst",
-        description: "Can read analytics data",
-        permissions: ["read_data", "view_lineage"]
-      }).returning();
-
-      const [dataEngineerRole] = await db.insert(roles).values({
-        name: "data_engineer", 
-        description: "Can read and modify data pipelines",
-        permissions: ["read_data", "write_data", "view_lineage", "manage_lineage"]
-      }).returning();
-
-      // Create sample user
-      const [sampleUser] = await db.insert(users).values({
-        email: "admin@company.com",
-        firstName: "Data",
-        lastName: "Admin"
-      }).returning();
-
-      // Create sample schemas
-      const [stagingSchema] = await db.insert(schemas).values({
-        name: "staging",
-        databaseId: analyticsDb.id,
-        description: "Staging area for raw data",
-        schemaType: "staging"
-      }).returning();
-
-      const [analyticsSchema] = await db.insert(schemas).values({
-        name: "analytics", 
-        databaseId: analyticsDb.id,
-        description: "Analytics and reporting tables",
-        schemaType: "analytics"
-      }).returning();
-
-      // Create sample tables
-      const [customersTable] = await db.insert(tables).values({
-        name: "customers",
-        schemaId: stagingSchema.id,
-        description: "Customer dimension table",
-        tableType: "table",
-        dataClassification: "internal",
-        rowCount: 10000,
-        position: { x: 50, y: 50 },
-        tags: ["customer", "dimension"]
-      }).returning();
-
-      const [ordersTable] = await db.insert(tables).values({
-        name: "orders",
-        schemaId: stagingSchema.id,
-        description: "Orders source table",
-        tableType: "table", 
-        dataClassification: "internal",
-        rowCount: 50000,
-        position: { x: 50, y: 350 },
-        tags: ["order", "transaction"]
-      }).returning();
-
-      const [customerOrdersTable] = await db.insert(tables).values({
-        name: "customer_orders",
-        schemaId: stagingSchema.id,
-        description: "Customer orders intermediate table", 
-        tableType: "view",
-        dataClassification: "internal",
-        position: { x: 350, y: 50 },
-        tags: ["customer", "order", "intermediate"]
-      }).returning();
-
-      const [customerSummaryTable] = await db.insert(tables).values({
-        name: "customer_summary",
-        schemaId: analyticsSchema.id,
-        description: "Customer summary analytics table",
-        tableType: "materialized_view",
-        dataClassification: "internal", 
-        rowCount: 8000,
-        position: { x: 650, y: 50 },
-        tags: ["customer", "analytics", "summary"]
-      }).returning();
-
-      const [orderAnalyticsTable] = await db.insert(tables).values({
-        name: "order_analytics",
-        schemaId: analyticsSchema.id,
-        description: "Order analytics summary",
-        tableType: "materialized_view",
-        dataClassification: "internal",
-        rowCount: 365,
-        position: { x: 650, y: 350 },
-        tags: ["order", "analytics", "daily"]
-      }).returning();
-
-      // Create sample columns for customers table
-      const customerColumns = [
-        { name: "customer_id", dataType: "varchar(50)", isPrimaryKey: true, ordinalPosition: 1, isPii: false },
-        { name: "customer_name", dataType: "varchar(255)", isPrimaryKey: false, ordinalPosition: 2, isPii: true },
-        { name: "customer_email", dataType: "varchar(255)", isPrimaryKey: false, ordinalPosition: 3, isPii: true },
-        { name: "customer_segment", dataType: "varchar(50)", isPrimaryKey: false, ordinalPosition: 4, isPii: false },
-        { name: "signup_date", dataType: "date", isPrimaryKey: false, ordinalPosition: 5, isPii: false }
-      ];
-
-      const insertedCustomerColumns = await db.insert(columns).values(
-        customerColumns.map(col => ({
-          ...col,
-          tableId: customersTable.id,
-          isNullable: !col.isPrimaryKey,
-          isForeignKey: false,
-          dataClassification: col.isPii ? "confidential" : "internal",
-          tags: col.isPii ? ["pii"] : []
-        }))
-      ).returning();
-
-      // Create sample columns for orders table
-      const orderColumns = [
-        { name: "order_id", dataType: "varchar(50)", isPrimaryKey: true, ordinalPosition: 1, isPii: false },
-        { name: "customer_id", dataType: "varchar(50)", isPrimaryKey: false, ordinalPosition: 2, isPii: false, isForeignKey: true },
-        { name: "order_date", dataType: "date", isPrimaryKey: false, ordinalPosition: 3, isPii: false },
-        { name: "order_status", dataType: "varchar(50)", isPrimaryKey: false, ordinalPosition: 4, isPii: false },
-        { name: "order_total", dataType: "decimal(10,2)", isPrimaryKey: false, ordinalPosition: 5, isPii: false }
-      ];
-
-      const insertedOrderColumns = await db.insert(columns).values(
-        orderColumns.map(col => ({
-          ...col,
-          tableId: ordersTable.id,
-          isNullable: !col.isPrimaryKey,
-          isForeignKey: col.isForeignKey || false,
-          dataClassification: "internal",
-          tags: []
-        }))
-      ).returning();
-
-      // Create sample columns for customer_orders intermediate table
-      const customerOrderColumns = [
-        { name: "customer_id", dataType: "varchar(50)", isPrimaryKey: false, ordinalPosition: 1, isForeignKey: true },
-        { name: "order_id", dataType: "varchar(50)", isPrimaryKey: false, ordinalPosition: 2, isForeignKey: true },
-        { name: "order_date", dataType: "date", isPrimaryKey: false, ordinalPosition: 3 },
-        { name: "order_total", dataType: "decimal(10,2)", isPrimaryKey: false, ordinalPosition: 4 },
-        { name: "customer_name", dataType: "varchar(255)", isPrimaryKey: false, ordinalPosition: 5, isPii: true }
-      ];
-
-      const insertedCustomerOrderColumns = await db.insert(columns).values(
-        customerOrderColumns.map(col => ({
-          ...col,
-          tableId: customerOrdersTable.id,
-          isNullable: false,
-          isForeignKey: col.isForeignKey || false,
-          isPrimaryKey: false,
-          dataClassification: col.isPii ? "confidential" : "internal",
-          isPii: col.isPii || false,
-          tags: col.isPii ? ["pii"] : []
-        }))
-      ).returning();
-
-      // Create sample columns for customer_summary analytics table
-      const customerSummaryColumns = [
-        { name: "customer_id", dataType: "varchar(50)", isPrimaryKey: true, ordinalPosition: 1 },
-        { name: "customer_name", dataType: "varchar(255)", isPrimaryKey: false, ordinalPosition: 2, isPii: true },
-        { name: "total_orders", dataType: "integer", isPrimaryKey: false, ordinalPosition: 3 },
-        { name: "total_spent", dataType: "decimal(12,2)", isPrimaryKey: false, ordinalPosition: 4 },
-        { name: "avg_order_value", dataType: "decimal(10,2)", isPrimaryKey: false, ordinalPosition: 5 }
-      ];
-
-      const insertedCustomerSummaryColumns = await db.insert(columns).values(
-        customerSummaryColumns.map(col => ({
-          ...col,
-          tableId: customerSummaryTable.id,
-          isNullable: !col.isPrimaryKey,
-          isForeignKey: false,
-          dataClassification: col.isPii ? "confidential" : "internal",
-          isPii: col.isPii || false,
-          tags: col.isPii ? ["pii"] : []
-        }))
-      ).returning();
-
-      // Create sample columns for order_analytics table
-      const orderAnalyticsColumns = [
-        { name: "order_date", dataType: "date", isPrimaryKey: false, ordinalPosition: 1 },
-        { name: "daily_orders", dataType: "integer", isPrimaryKey: false, ordinalPosition: 2 },
-        { name: "daily_revenue", dataType: "decimal(12,2)", isPrimaryKey: false, ordinalPosition: 3 },
-        { name: "avg_order_value", dataType: "decimal(10,2)", isPrimaryKey: false, ordinalPosition: 4 },
-        { name: "new_customers", dataType: "integer", isPrimaryKey: false, ordinalPosition: 5 }
-      ];
-
-      await db.insert(columns).values(
-        orderAnalyticsColumns.map(col => ({
-          ...col,
-          tableId: orderAnalyticsTable.id,
-          isNullable: false,
-          isForeignKey: false,
-          isPrimaryKey: false,
-          dataClassification: "internal",
-          isPii: false,
-          tags: []
-        }))
-      );
-
-      // Create table-level lineage
-      await db.insert(tableLineage).values([
-        {
-          sourceTableId: customersTable.id,
-          targetTableId: customerOrdersTable.id,
-          transformationType: "join",
-          transformationLogic: "JOIN customers ON customers.customer_id = orders.customer_id",
-          executionFrequency: "hourly"
-        },
-        {
-          sourceTableId: ordersTable.id,
-          targetTableId: customerOrdersTable.id,
-          transformationType: "join",
-          transformationLogic: "JOIN orders ON customers.customer_id = orders.customer_id",
-          executionFrequency: "hourly"
-        },
-        {
-          sourceTableId: customerOrdersTable.id,
-          targetTableId: customerSummaryTable.id,
-          transformationType: "aggregation",
-          transformationLogic: "GROUP BY customer_id, customer_name",
-          executionFrequency: "daily"
-        },
-        {
-          sourceTableId: customerOrdersTable.id,
-          targetTableId: orderAnalyticsTable.id,
-          transformationType: "aggregation",
-          transformationLogic: "GROUP BY DATE(order_date)",
-          executionFrequency: "daily"
-        }
-      ]);
-
-      // Create column-level lineage examples
-      // Customer ID lineage from customers to customer_orders
-      const customerIdSource = insertedCustomerColumns.find(c => c.name === "customer_id");
-      const customerIdTarget = insertedCustomerOrderColumns.find(c => c.name === "customer_id");
-      
-      if (customerIdSource && customerIdTarget) {
-        await db.insert(columnLineage).values({
-          sourceColumnId: customerIdSource.id,
-          targetColumnId: customerIdTarget.id,
-          transformationType: "direct",
-          transformationLogic: "Direct copy",
-          confidence: 100
-        });
-      }
-
-      // Customer name lineage
-      const customerNameSource = insertedCustomerColumns.find(c => c.name === "customer_name");
-      const customerNameTarget = insertedCustomerOrderColumns.find(c => c.name === "customer_name");
-      
-      if (customerNameSource && customerNameTarget) {
-        await db.insert(columnLineage).values({
-          sourceColumnId: customerNameSource.id,
-          targetColumnId: customerNameTarget.id,
-          transformationType: "direct",
-          transformationLogic: "Direct copy from customers table",
-          confidence: 100
-        });
-      }
-
-      // Order columns lineage
-      const orderIdSource = insertedOrderColumns.find(c => c.name === "order_id");
-      const orderIdTarget = insertedCustomerOrderColumns.find(c => c.name === "order_id");
-      
-      if (orderIdSource && orderIdTarget) {
-        await db.insert(columnLineage).values({
-          sourceColumnId: orderIdSource.id,
-          targetColumnId: orderIdTarget.id,
-          transformationType: "direct",
-          transformationLogic: "Direct copy from orders table",
-          confidence: 100
-        });
-      }
-
-      // Create sample project
-      await db.insert(projects).values({
-        name: "dbt_shop_online",
-        description: "E-commerce data pipeline with Snowflake integration",
-        ownerId: sampleUser.id,
-        modelCount: 22,
-        sourceCount: 8,
-        tags: ["ecommerce", "snowflake", "dbt"]
-      });
-
-      // Create sample data quality rules
-      await db.insert(dataQualityRules).values([
-        {
-          name: "Customer ID Not Null",
-          description: "Customer ID should never be null",
-          ruleType: "null_check",
-          resourceType: "column",
-          resourceId: customerIdSource?.id || "",
-          ruleDefinition: { "check": "not_null" },
-          severity: "critical"
-        },
-        {
-          name: "Order Total Range Check",
-          description: "Order total should be between 0 and 10000",
-          ruleType: "range_check", 
-          resourceType: "column",
-          resourceId: insertedOrderColumns.find(c => c.name === "order_total")?.id || "",
-          ruleDefinition: { "min": 0, "max": 10000 },
-          severity: "high"
-        }
-      ]);
-
-      console.log("Sample data initialized successfully");
-    } catch (error) {
-      console.error("Error initializing sample data:", error);
-    }
+    // No sample data initialization - will be populated from Snowflake
+    console.log('DatabaseStorage initialized - ready for Snowflake data import');
   }
 
   // Database Operations
@@ -431,7 +107,7 @@ export class DatabaseStorage implements IStorage {
     return database;
   }
 
-  // Schema Operations
+  // Schema Operations  
   async getSchemas(databaseId?: string): Promise<Schema[]> {
     if (databaseId) {
       return await db.select().from(schemas).where(eq(schemas.databaseId, databaseId)).orderBy(asc(schemas.name));
@@ -459,8 +135,8 @@ export class DatabaseStorage implements IStorage {
 
   async getTablesWithSchema(): Promise<TableWithSchema[]> {
     return await db.select().from(tables)
-      .innerJoin(schemas, eq(tables.schemaId, schemas.id))
-      .innerJoin(databases, eq(schemas.databaseId, databases.id))
+      .leftJoin(schemas, eq(tables.schemaId, schemas.id))
+      .leftJoin(databases, eq(schemas.databaseId, databases.id))
       .orderBy(asc(tables.name));
   }
 
@@ -470,21 +146,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTableWithSchema(id: string): Promise<TableWithSchema | undefined> {
-    const result = await db.select().from(tables)
-      .innerJoin(schemas, eq(tables.schemaId, schemas.id))
-      .innerJoin(databases, eq(schemas.databaseId, databases.id))
+    const [result] = await db.select().from(tables)
+      .leftJoin(schemas, eq(tables.schemaId, schemas.id))
+      .leftJoin(databases, eq(schemas.databaseId, databases.id))
       .where(eq(tables.id, id));
-    
-    if (result.length === 0) return undefined;
-    
-    const row = result[0];
-    return {
-      ...row.tables,
-      schema: {
-        ...row.schemas,
-        database: row.databases
-      }
-    };
+    return result;
   }
 
   async createTable(insertTable: InsertTable): Promise<Table> {
@@ -493,10 +159,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined> {
-    const [table] = await db.update(tables)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(tables.id, id))
-      .returning();
+    const [table] = await db.update(tables).set(updates).where(eq(tables.id, id)).returning();
     return table;
   }
 
@@ -508,23 +171,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getColumnsWithTable(tableId: string): Promise<ColumnWithTable[]> {
-    const result = await db.select().from(columns)
-      .innerJoin(tables, eq(columns.tableId, tables.id))
-      .innerJoin(schemas, eq(tables.schemaId, schemas.id))
-      .innerJoin(databases, eq(schemas.databaseId, databases.id))
+    return await db.select().from(columns)
+      .leftJoin(tables, eq(columns.tableId, tables.id))
       .where(eq(columns.tableId, tableId))
       .orderBy(asc(columns.ordinalPosition));
-
-    return result.map(row => ({
-      ...row.columns,
-      table: {
-        ...row.tables,
-        schema: {
-          ...row.schemas,
-          database: row.databases
-        }
-      }
-    }));
   }
 
   async getColumn(id: string): Promise<Column | undefined> {
@@ -543,46 +193,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getColumnLineageWithDetails(): Promise<ColumnLineageWithDetails[]> {
-    const result = await db.select().from(columnLineage)
-      .innerJoin(columns, eq(columnLineage.sourceColumnId, columns.id))
-      .innerJoin(tables, eq(columns.tableId, tables.id))
-      .innerJoin(schemas, eq(tables.schemaId, schemas.id))
-      .innerJoin(databases, eq(schemas.databaseId, databases.id))
+    return await db.select().from(columnLineage)
+      .leftJoin(columns, eq(columnLineage.sourceColumnId, columns.id))
+      .leftJoin(tables, eq(columns.tableId, tables.id))
       .orderBy(desc(columnLineage.createdAt));
-
-    // This is a simplified version - in reality we'd need separate joins for source and target
-    return result.map(row => ({
-      ...row.column_lineage,
-      sourceColumn: {
-        ...row.columns,
-        table: {
-          ...row.tables,
-          schema: {
-            ...row.schemas,
-            database: row.databases
-          }
-        }
-      },
-      // Note: This would need a separate query for target column details
-      targetColumn: {} as ColumnWithTable
-    }));
   }
 
   async getColumnLineageByTableId(tableId: string): Promise<ColumnLineageWithDetails[]> {
-    // Get columns for the table first
-    const tableColumns = await this.getColumnsByTableId(tableId);
-    const columnIds = tableColumns.map(c => c.id);
-    
-    if (columnIds.length === 0) return [];
-
     return await db.select().from(columnLineage)
-      .where(
-        and(
-          inArray(columnLineage.sourceColumnId, columnIds),
-          inArray(columnLineage.targetColumnId, columnIds)
-        )
-      )
-      .orderBy(desc(columnLineage.createdAt)) as ColumnLineageWithDetails[];
+      .leftJoin(columns, eq(columnLineage.sourceColumnId, columns.id))
+      .leftJoin(tables, eq(columns.tableId, tables.id))
+      .where(eq(tables.id, tableId))
+      .orderBy(desc(columnLineage.createdAt));
   }
 
   async createColumnLineage(insertLineage: InsertColumnLineage): Promise<ColumnLineage> {
@@ -590,19 +212,14 @@ export class DatabaseStorage implements IStorage {
     return lineage;
   }
 
-  // Table Lineage Operations  
+  // Table Lineage Operations
   async getTableLineage(): Promise<TableLineage[]> {
     return await db.select().from(tableLineage).orderBy(desc(tableLineage.createdAt));
   }
 
   async getTableLineageByTableId(tableId: string): Promise<TableLineage[]> {
     return await db.select().from(tableLineage)
-      .where(
-        and(
-          eq(tableLineage.sourceTableId, tableId),
-          eq(tableLineage.targetTableId, tableId)
-        )
-      )
+      .where(eq(tableLineage.sourceTableId, tableId))
       .orderBy(desc(tableLineage.createdAt));
   }
 
@@ -613,7 +230,7 @@ export class DatabaseStorage implements IStorage {
 
   // User Operations (for RBAC)
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.isActive, true)).orderBy(asc(users.email));
+    return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -622,25 +239,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserWithRoles(id: string): Promise<UserWithRoles | undefined> {
-    const result = await db.select().from(users)
+    const [result] = await db.select().from(users)
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
       .where(eq(users.id, id));
-
-    if (result.length === 0) return undefined;
-
-    const user = result[0].users;
-    const userRoleData = result
-      .filter(row => row.user_roles && row.roles)
-      .map(row => ({
-        ...row.user_roles!,
-        role: row.roles!
-      }));
-
-    return {
-      ...user,
-      userRoles: userRoleData
-    };
+    return result;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -648,13 +251,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users)
-      .values(insertUser)
+  async upsertUser(userData: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
       .onConflictDoUpdate({
-        target: users.email,
+        target: users.id,
         set: {
-          ...insertUser,
+          ...userData,
           updatedAt: new Date(),
         },
       })
@@ -685,17 +289,13 @@ export class DatabaseStorage implements IStorage {
 
   async removeUserRole(userId: string, roleId: string): Promise<void> {
     await db.delete(userRoles)
-      .where(
-        and(
-          eq(userRoles.userId, userId),
-          eq(userRoles.roleId, roleId)
-        )
-      );
+      .where(eq(userRoles.userId, userId))
+      .where(eq(userRoles.roleId, roleId));
   }
 
   // Data Access Policies
   async getDataAccessPolicies(resourceType?: string, resourceId?: string): Promise<DataAccessPolicy[]> {
-    let query = db.select().from(dataAccessPolicies).where(eq(dataAccessPolicies.isActive, true));
+    let query = db.select().from(dataAccessPolicies);
     
     if (resourceType) {
       query = query.where(eq(dataAccessPolicies.resourceType, resourceType));
@@ -715,7 +315,7 @@ export class DatabaseStorage implements IStorage {
 
   // Data Quality Rules
   async getDataQualityRules(resourceType?: string, resourceId?: string): Promise<DataQualityRule[]> {
-    let query = db.select().from(dataQualityRules).where(eq(dataQualityRules.isActive, true));
+    let query = db.select().from(dataQualityRules);
     
     if (resourceType) {
       query = query.where(eq(dataQualityRules.resourceType, resourceType));

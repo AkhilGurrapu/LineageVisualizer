@@ -26,11 +26,11 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
   const { toast } = useToast();
   const [config, setConfig] = useState<SnowflakeConfig>({
     account: "YECALEZ-TCB02565",
-    user: "snowsarva_user", 
-    role: "SNOWSARVA_ROLE",
-    warehouse: "SNOWSARVA_WAREHOUSE",
-    database: "SNOWSARVA_IMAGE_DATABASE",
-    schema: "SNOWSARVA_IMAGE_SCHEMA"
+    user: "SVC_AKHIL", 
+    role: "ACCOUNTADMIN",
+    warehouse: "COMPUTE_WH",
+    database: "SNOWFLAKE_MONITORING",
+    schema: "MONITORING_SEMANTIC"
   });
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -127,7 +127,7 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                     id="user"
                     value={config.user}
                     onChange={(e) => setConfig(prev => ({ ...prev, user: e.target.value }))}
-                    placeholder="snowsarva_user"
+                    placeholder="SVC_AKHIL"
                     data-testid="input-user"
                   />
                 </div>
@@ -140,7 +140,7 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                     id="role"
                     value={config.role}
                     onChange={(e) => setConfig(prev => ({ ...prev, role: e.target.value }))}
-                    placeholder="SNOWSARVA_ROLE"
+                    placeholder="ACCOUNTADMIN"
                     data-testid="input-role"
                   />
                 </div>
@@ -150,7 +150,7 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                     id="warehouse"
                     value={config.warehouse}
                     onChange={(e) => setConfig(prev => ({ ...prev, warehouse: e.target.value }))}
-                    placeholder="SNOWSARVA_WAREHOUSE"
+                    placeholder="COMPUTE_WH"
                     data-testid="input-warehouse"
                   />
                 </div>
@@ -163,7 +163,7 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                     id="database"
                     value={config.database}
                     onChange={(e) => setConfig(prev => ({ ...prev, database: e.target.value }))}
-                    placeholder="SNOWSARVA_IMAGE_DATABASE"
+                    placeholder="SNOWFLAKE_MONITORING"
                     data-testid="input-database"
                   />
                 </div>
@@ -173,7 +173,7 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                     id="schema"
                     value={config.schema}
                     onChange={(e) => setConfig(prev => ({ ...prev, schema: e.target.value }))}
-                    placeholder="SNOWSARVA_IMAGE_SCHEMA"
+                    placeholder="MONITORING_SEMANTIC"
                     data-testid="input-schema"
                   />
                 </div>
