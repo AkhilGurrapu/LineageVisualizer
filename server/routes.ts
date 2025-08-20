@@ -506,6 +506,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Snowflake integration routes
+  app.post('/api/snowflake/test-connection', async (req, res) => {
+    try {
+      const config = req.body;
+      const { SnowflakeConnector } = await import('./snowflake');
+      const connector = new SnowflakeConnector();
+      
+      const result = await connector.testConnection(config);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: 'Connection successful',
+          tableCount: result.tableCount 
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error('Snowflake test connection error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error during connection test' 
+      });
+    }
+  });
+
+  app.post('/api/snowflake/load-data', async (req, res) => {
+    try {
+      const config = req.body;
+      const { SnowflakeConnector } = await import('./snowflake');
+      const connector = new SnowflakeConnector();
+      
+      // Clear existing sample data
+      await storage.clearAllData();
+      
+      // Get tables and views from Snowflake
+      const [tables, views, columns] = await Promise.all([
+        connector.getTables(config),
+        connector.getViews(config),
+        connector.getColumns(config)
+      ]);
+      
+      // Combine tables and views
+      const allTables = [...tables, ...views];
+      
+      // Create database and schema in our system
+      const database = await storage.createDatabase({
+        name: config.database,
+        type: 'snowflake',
+        description: `Snowflake database: ${config.database}`,
+        connectionString: `${config.account}/${config.database}`,
+        tags: ['snowflake', 'production']
+      });
+      
+      const schema = await storage.createSchema({
+        name: config.schema,
+        databaseId: database.id,
+        description: `Snowflake schema: ${config.schema}`,
+        tags: ['snowflake']
+      });
+      
+      // Create tables in our system
+      const createdTables = [];
+      for (const table of allTables) {
+        const createdTable = await storage.createTable({
+          name: table.table_name,
+          schemaId: schema.id,
+          description: table.comment || `Snowflake ${table.table_type.toLowerCase()}: ${table.table_name}`,
+          tableType: table.table_type.toLowerCase() === 'view' ? 'view' : 'table',
+          dataClassification: 'internal',
+          rowCount: table.row_count || 0,
+          sizeBytes: table.bytes || 0,
+          position: { 
+            x: Math.random() * 800 + 100, 
+            y: Math.random() * 600 + 100 
+          },
+          tags: ['snowflake', table.table_type.toLowerCase()]
+        });
+        createdTables.push(createdTable);
+      }
+      
+      // Create columns in our system
+      let columnCount = 0;
+      for (const column of columns) {
+        const table = createdTables.find(t => t.name === column.table_name);
+        if (table) {
+          await storage.createColumn({
+            name: column.column_name,
+            tableId: table.id,
+            dataType: column.data_type,
+            isNullable: column.is_nullable === 'YES',
+            isPrimaryKey: false, // We'd need additional queries to detect primary keys
+            isForeignKey: false, // We'd need additional queries to detect foreign keys
+            ordinalPosition: column.ordinal_position,
+            dataClassification: 'internal',
+            isPii: false, // Could be enhanced with PII detection
+            tags: ['snowflake']
+          });
+          columnCount++;
+        }
+      }
+      
+      connector.disconnect();
+      
+      res.json({
+        success: true,
+        message: 'Data loaded successfully from Snowflake',
+        tableCount: allTables.length,
+        columnCount: columnCount,
+        database: database.name,
+        schema: schema.name
+      });
+      
+    } catch (error: any) {
+      console.error('Snowflake load data error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to load data from Snowflake: ${error.message}` 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

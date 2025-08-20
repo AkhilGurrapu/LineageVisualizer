@@ -81,6 +81,9 @@ export interface IStorage {
   getAllColumns(): Promise<Column[]>;
   getUpstreamColumnLineage(columnId: string): Promise<ColumnLineage[]>;
   getDownstreamColumnLineage(columnId: string): Promise<ColumnLineage[]>;
+  
+  // Data Management
+  clearAllData(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -760,6 +763,21 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(columnLineage)
       .where(eq(columnLineage.sourceColumnId, columnId))
       .orderBy(desc(columnLineage.createdAt));
+  }
+
+  // Clear all data for fresh Snowflake import
+  async clearAllData(): Promise<void> {
+    // Delete in proper order to avoid foreign key constraints
+    await db.delete(columnLineage);
+    await db.delete(tableLineage);
+    await db.delete(columns);
+    await db.delete(tables);
+    await db.delete(schemas);
+    await db.delete(databases);
+    await db.delete(projects);
+    await db.delete(dataQualityRules);
+    await db.delete(dataAccessPolicies);
+    console.log('All data cleared for fresh import');
   }
 }
 
