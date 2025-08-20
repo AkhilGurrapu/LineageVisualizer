@@ -4,12 +4,14 @@ import { type Table, type Database, type Schema, type TableLineage, type Project
 import LineageCanvas from "@/components/lineage/lineage-canvas";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Maximize2, Minimize2, Database as DatabaseIcon } from "lucide-react";
+import { Maximize2, Minimize2, Database as DatabaseIcon, Settings } from "lucide-react";
+import SnowflakeSettings from "./snowflake-settings";
 
 export default function Dashboard() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedDatabase, setSelectedDatabase] = useState<string | null>(null);
   const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const { data: databases = [] } = useQuery<Database[]>({
     queryKey: ['/api/databases'],
@@ -112,6 +114,15 @@ export default function Dashboard() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowSettings(true)}
+            data-testid="button-settings"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Snowflake Settings
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsFullscreen(!isFullscreen)}
             data-testid={isFullscreen ? "button-minimize" : "button-maximize"}
           >
@@ -138,6 +149,11 @@ export default function Dashboard() {
           project={currentProject}
         />
       </div>
+
+      {/* Snowflake Settings Modal */}
+      {showSettings && (
+        <SnowflakeSettings onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 }
