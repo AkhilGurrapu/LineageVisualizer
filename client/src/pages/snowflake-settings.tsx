@@ -38,25 +38,20 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
   const testConnectionMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/snowflake/test-connection', config);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Connection failed');
-      }
       return await response.json();
     },
     onSuccess: (data) => {
       setConnectionStatus('success');
       toast({
         title: "Connection Successful",
-        description: `Connected to Snowflake! Found ${data.tableCount || 0} tables in ${config.database}.${config.schema}`,
+        description: `Connected to Snowflake. Found ${data.tableCount || 0} tables.`,
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setConnectionStatus('error');
-      console.error('Connection test failed:', error);
       toast({
         title: "Connection Failed",
-        description: error.message || "Please check your credentials and PAT token.",
+        description: "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -197,18 +192,9 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
                   <div>
                     <h4 className="font-medium text-blue-900">Personal Access Token Required</h4>
                     <p className="text-sm text-blue-700 mt-1">
-                      This connection requires a valid Personal Access Token (PAT) from Snowflake.
-                      If your PAT token is not working, you can still load sample monitoring data to see the lineage visualization.
+                      This connection uses <code>PROGRAMMATIC_ACCESS_TOKEN</code> authentication.
+                      Make sure you have added your Snowflake PAT to the Replit secrets with the key <code>SNOWFLAKE_PAT</code>.
                     </p>
-                    <div className="mt-2 text-xs text-blue-600 bg-white/50 p-2 rounded">
-                      <strong>Current Settings:</strong><br/>
-                      Account: {config.account}<br/>
-                      User: {config.user}<br/>
-                      Role: {config.role}<br/>
-                      Warehouse: {config.warehouse}<br/>
-                      Database: {config.database}<br/>
-                      Schema: {config.schema}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -258,10 +244,10 @@ export default function SnowflakeSettings({ onClose }: SnowflakeSettingsProps) {
             </Button>
             <Button 
               onClick={handleLoadData}
-              disabled={loadDataMutation.isPending}
+              disabled={loadDataMutation.isPending || connectionStatus !== 'success'}
               data-testid="button-load-data"
             >
-              {loadDataMutation.isPending ? 'Loading...' : 'Load Snowflake Monitoring Data'}
+              {loadDataMutation.isPending ? 'Loading...' : 'Load Data from Snowflake'}
             </Button>
           </div>
         </div>

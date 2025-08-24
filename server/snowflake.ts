@@ -42,12 +42,16 @@ class SnowflakeConnector {
       throw new Error('SNOWFLAKE_PAT environment variable is required');
     }
 
+    // Create token file for Snowflake authentication
+    const tokenPath = path.join(process.cwd(), 'snowflake-pat.token');
+    await fs.writeFile(tokenPath, process.env.SNOWFLAKE_PAT, 'utf8');
+
     return new Promise((resolve, reject) => {
       this.connection = snowflake.createConnection({
         account: config.account,
         username: config.user,
-        authenticator: 'OAUTH',
-        token: process.env.SNOWFLAKE_PAT,
+        authenticator: 'PROGRAMMATIC_ACCESS_TOKEN',
+        token_file_path: tokenPath,
         role: config.role,
         warehouse: config.warehouse,
         database: config.database,
