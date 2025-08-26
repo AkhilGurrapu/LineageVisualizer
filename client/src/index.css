@@ -135,24 +135,132 @@
 @layer utilities {
   .react-flow__node-table {
     @apply bg-white rounded-lg shadow-lg border border-slate-200;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .react-flow__node-table:hover {
+    @apply shadow-2xl;
+    transform: translateY(-2px);
+  }
+
+  .react-flow__node-table.selected {
+    @apply ring-2 ring-blue-500 shadow-2xl;
+    transform: translateY(-2px);
   }
 
   .react-flow__edge-default {
-    @apply stroke-blue-500;
+    @apply stroke-slate-400;
     stroke-width: 2;
+    transition: all 0.3s ease;
+  }
+
+  .react-flow__edge-default.highlighted {
+    @apply stroke-blue-500;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
   }
 
   .react-flow__edge-default .react-flow__edge-path {
-    @apply stroke-blue-500;
+    @apply stroke-slate-400;
     stroke-width: 2;
+    transition: all 0.3s ease;
+  }
+
+  .react-flow__edge-default.highlighted .react-flow__edge-path {
+    @apply stroke-blue-500;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
   }
 
   .react-flow__handle {
-    @apply w-2 h-2 bg-blue-500;
-    border: none;
+    @apply w-3 h-3 bg-blue-500 border-2 border-white rounded-full;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+
+  .react-flow__node:hover .react-flow__handle {
+    opacity: 1;
+    @apply bg-blue-600 transform scale-110;
+  }
+
+  .react-flow__handle.connected {
+    @apply bg-green-500;
+    opacity: 1;
   }
 
   .minimap-node {
     @apply stroke-slate-300 fill-white;
+    transition: all 0.2s ease;
   }
+
+  .minimap-node.highlighted {
+    @apply stroke-blue-500 fill-blue-50;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes column-highlight {
+  0% {
+    background-color: rgb(239, 246, 255);
+    border-color: rgb(147, 197, 253);
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgb(219, 234, 254);
+    border-color: rgb(96, 165, 250);
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: rgb(239, 246, 255);
+    border-color: rgb(147, 197, 253);
+    transform: scale(1);
+  }
+}
+
+@keyframes lineage-flow {
+  0% {
+    stroke-dashoffset: 20;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.column-selected {
+  animation: column-highlight 1s ease-in-out;
+  background: linear-gradient(135deg, rgb(239, 246, 255) 0%, rgb(219, 234, 254) 100%);
+  border: 2px solid rgb(59, 130, 246);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.column-highlighted {
+  background: linear-gradient(135deg, rgb(248, 250, 252) 0%, rgb(241, 245, 249) 100%);
+  border: 1px solid rgb(203, 213, 225);
+  box-shadow: 0 2px 8px rgba(203, 213, 225, 0.4);
+}
+
+.table-node-gradient {
+  background: linear-gradient(135deg, rgb(255, 255, 255) 0%, rgb(248, 250, 252) 100%);
+  border: 1px solid rgb(226, 232, 240);
+}
+
+.table-node-highlighted {
+  background: linear-gradient(135deg, rgb(239, 246, 255) 0%, rgb(219, 234, 254) 100%);
+  border: 2px solid rgb(59, 130, 246);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+  animation: pulse-glow 2s infinite;
+}
+
+.lineage-edge-animated {
+  stroke-dasharray: 5, 5;
+  animation: lineage-flow 1s linear infinite;
 }
