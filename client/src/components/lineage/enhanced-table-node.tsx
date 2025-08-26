@@ -60,16 +60,8 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
   };
 
   const getDataClassificationColor = () => {
-    switch (table.dataClassification) {
-      case 'sensitive':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'internal':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'public':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
-    }
+    // Remove all colored highlighting for cleaner interface
+    return 'bg-slate-100 text-slate-600 border-slate-200';
   };
 
   const getHighlightStyle = () => {
@@ -119,8 +111,8 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
             {getTableTypeIcon()}
             <h3 className="font-semibold text-slate-900 text-sm">{table.name}</h3>
             {table.dataClassification && (
-              <Badge variant="outline" className={`text-xs ${getDataClassificationColor()}`}>
-                <Shield className="w-3 h-3 mr-1" />
+              <Badge variant="outline" className="text-xs bg-slate-100 text-slate-600 border-slate-200">
+                <Shield className="w-3 h-3 mr-1 text-slate-500" />
                 {table.dataClassification}
               </Badge>
             )}
