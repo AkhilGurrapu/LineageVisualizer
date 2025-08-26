@@ -189,7 +189,15 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
 
       {/* Expanded Columns Section */}
       {isExpanded && (
-        <div className="p-5 max-h-80 overflow-y-auto">
+        <div 
+          className="p-5 max-h-80 overflow-y-auto"
+          onWheel={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+        >
           {isLoading ? (
             <div className="text-sm text-slate-500 py-4 text-center">Loading columns...</div>
           ) : columns.length === 0 ? (
