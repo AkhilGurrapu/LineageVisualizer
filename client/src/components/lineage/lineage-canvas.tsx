@@ -73,9 +73,20 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setLineageMode('column');
     setShowLineagePanel(true);
     
-    // Position panel near the mouse click if event is provided
-    if (event) {
-      setLineagePanelPosition({ x: event.clientX, y: event.clientY });
+    // Position panel at top-right of the node
+    if (reactFlowInstance && tableId) {
+      const node = reactFlowInstance.getNode(tableId);
+      if (node) {
+        // Convert node position to screen coordinates
+        const nodeScreenPosition = reactFlowInstance.flowToScreenPosition({
+          x: node.position.x + 300, // Offset to the right of the node
+          y: node.position.y - 20   // Slightly above the node
+        });
+        setLineagePanelPosition({ 
+          x: nodeScreenPosition.x, 
+          y: nodeScreenPosition.y 
+        });
+      }
     }
 
     try {
