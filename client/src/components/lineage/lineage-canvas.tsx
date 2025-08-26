@@ -32,10 +32,6 @@ import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Target, GitBranch, Zap, RotateCcw, Info } from "lucide-react";
 
-const nodeTypes = {
-  table: EnhancedTableNode,
-};
-
 interface LineageCanvasProps {
   tables: Table[];
   connections: TableLineage[];
@@ -43,6 +39,9 @@ interface LineageCanvasProps {
 }
 
 function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps) {
+  const nodeTypes = useMemo(() => ({
+    table: EnhancedTableNode,
+  }), []);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [highlightedColumns, setHighlightedColumns] = useState<Set<string>>(new Set());
@@ -233,24 +232,33 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         target: connection.targetTableId,
         type: 'default',
         animated: isHighlighted && lineageMode === 'column',
-        style: edgeStyle,
+        style: {
+          ...edgeStyle,
+          cursor: 'pointer'
+        },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: edgeStyle.stroke,
         },
         data: {
           transformationType: connection.transformationType,
-          isHighlighted
+          isHighlighted,
+          connection
         },
-        label: lineageMode === 'column' && isHighlighted ? connection.transformationType : '',
+        label: connection.transformationType,
         labelStyle: { 
-          fontSize: 12, 
+          fontSize: 11, 
           fontWeight: 600,
           fill: edgeStyle.stroke,
           backgroundColor: 'white',
-          padding: '2px 4px',
-          borderRadius: '4px'
-        }
+          padding: '4px 8px',
+          borderRadius: '6px',
+          border: `1px solid ${edgeStyle.stroke}`,
+          cursor: 'pointer'
+        },
+        labelBgPadding: [8, 4],
+        labelBgBorderRadius: 6,
+        interactionWidth: 20
       };
     });
   }, [connections, getEdgeStyle, highlightedTables, lineageMode]);

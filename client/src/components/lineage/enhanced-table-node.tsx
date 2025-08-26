@@ -190,7 +190,16 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
       {/* Expanded Columns Section */}
       {isExpanded && (
         <div 
-          className="p-5 max-h-60 overflow-y-scroll border-t column-scroll-container"
+          className="p-5 border-t column-scroll-container resize-y"
+          style={{ 
+            height: '300px',
+            minHeight: '200px',
+            maxHeight: '500px',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e1 #f1f5f9',
+            resize: 'vertical'
+          }}
           onWheel={(e) => {
             e.stopPropagation();
           }}
@@ -199,10 +208,6 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
           }}
           onMouseMove={(e) => {
             e.stopPropagation();
-          }}
-          style={{ 
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#cbd5e1 #f1f5f9'
           }}
         >
           {isLoading ? (

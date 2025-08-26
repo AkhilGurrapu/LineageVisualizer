@@ -272,19 +272,38 @@
 }
 
 .column-scroll-container::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .column-scroll-container::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .column-scroll-container::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .column-scroll-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.column-scroll-container::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Resize handle styling */
+.resize-y {
+  resize: vertical;
+  overflow: auto;
+}
+
+/* Interactive edge styling */
+.react-flow__edge {
+  cursor: pointer;
+}
+
+.react-flow__edge:hover {
+  stroke-width: 4px !important;
 }
