@@ -353,16 +353,110 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(columns).orderBy(columns.name);
   }
 
-  async getUpstreamColumnLineage(columnId: string): Promise<ColumnLineage[]> {
-    return await db.select().from(columnLineage)
+  async getUpstreamColumnLineage(columnId: string): Promise<any[]> {
+    // First get the basic lineage data
+    const lineages = await db.select().from(columnLineage)
       .where(eq(columnLineage.targetColumnId, columnId))
       .orderBy(desc(columnLineage.createdAt));
+    
+    // Then enrich with column and table details
+    const enrichedLineages = [];
+    for (const lineage of lineages) {
+      // Get source column details
+      const [sourceColumnData] = await db
+        .select({
+          column_name: columns.name,
+          table_name: tables.name,
+          schema_name: schemas.name,
+          database_name: databases.name,
+        })
+        .from(columns)
+        .innerJoin(tables, eq(columns.tableId, tables.id))
+        .innerJoin(schemas, eq(tables.schemaId, schemas.id))
+        .innerJoin(databases, eq(schemas.databaseId, databases.id))
+        .where(eq(columns.id, lineage.sourceColumnId));
+      
+      // Get target column details
+      const [targetColumnData] = await db
+        .select({
+          column_name: columns.name,
+          table_name: tables.name,
+          schema_name: schemas.name,
+          database_name: databases.name,
+        })
+        .from(columns)
+        .innerJoin(tables, eq(columns.tableId, tables.id))
+        .innerJoin(schemas, eq(tables.schemaId, schemas.id))
+        .innerJoin(databases, eq(schemas.databaseId, databases.id))
+        .where(eq(columns.id, lineage.targetColumnId));
+      
+      enrichedLineages.push({
+        ...lineage,
+        source_column_name: sourceColumnData?.column_name,
+        source_table_name: sourceColumnData?.table_name,
+        source_schema_name: sourceColumnData?.schema_name,
+        source_database_name: sourceColumnData?.database_name,
+        target_column_name: targetColumnData?.column_name,
+        target_table_name: targetColumnData?.table_name,
+        target_schema_name: targetColumnData?.schema_name,
+        target_database_name: targetColumnData?.database_name,
+      });
+    }
+    
+    return enrichedLineages;
   }
 
-  async getDownstreamColumnLineage(columnId: string): Promise<ColumnLineage[]> {
-    return await db.select().from(columnLineage)
+  async getDownstreamColumnLineage(columnId: string): Promise<any[]> {
+    // First get the basic lineage data
+    const lineages = await db.select().from(columnLineage)
       .where(eq(columnLineage.sourceColumnId, columnId))
       .orderBy(desc(columnLineage.createdAt));
+    
+    // Then enrich with column and table details
+    const enrichedLineages = [];
+    for (const lineage of lineages) {
+      // Get source column details
+      const [sourceColumnData] = await db
+        .select({
+          column_name: columns.name,
+          table_name: tables.name,
+          schema_name: schemas.name,
+          database_name: databases.name,
+        })
+        .from(columns)
+        .innerJoin(tables, eq(columns.tableId, tables.id))
+        .innerJoin(schemas, eq(tables.schemaId, schemas.id))
+        .innerJoin(databases, eq(schemas.databaseId, databases.id))
+        .where(eq(columns.id, lineage.sourceColumnId));
+      
+      // Get target column details
+      const [targetColumnData] = await db
+        .select({
+          column_name: columns.name,
+          table_name: tables.name,
+          schema_name: schemas.name,
+          database_name: databases.name,
+        })
+        .from(columns)
+        .innerJoin(tables, eq(columns.tableId, tables.id))
+        .innerJoin(schemas, eq(tables.schemaId, schemas.id))
+        .innerJoin(databases, eq(schemas.databaseId, databases.id))
+        .where(eq(columns.id, lineage.targetColumnId));
+      
+      enrichedLineages.push({
+        ...lineage,
+        source_column_name: sourceColumnData?.column_name,
+        source_table_name: sourceColumnData?.table_name,
+        source_schema_name: sourceColumnData?.schema_name,
+        source_database_name: sourceColumnData?.database_name,
+        target_column_name: targetColumnData?.column_name,
+        target_table_name: targetColumnData?.table_name,
+        target_schema_name: targetColumnData?.schema_name,
+        target_database_name: targetColumnData?.database_name,
+      });
+    }
+    
+    return enrichedLineages;
   }
 
   // Clear all data for fresh Snowflake import
