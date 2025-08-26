@@ -264,7 +264,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
-        attributionPosition="top-right"
+        attributionPosition={undefined}
         className="bg-slate-50"
         minZoom={0.1}
         maxZoom={2}
