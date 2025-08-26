@@ -253,61 +253,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
 
   return (
     <div className="w-full h-full relative" data-testid="lineage-canvas">
-      {/* Control Panel */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-3 space-y-2">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={lineageMode === 'table' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => {
-              setLineageMode('table');
-              clearSelection();
-            }}
-            className="text-xs"
-          >
-            <GitBranch className="w-3 h-3 mr-1" />
-            Table
-          </Button>
-          <Button
-            variant={lineageMode === 'column' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLineageMode('column')}
-            className="text-xs"
-            disabled={!selectedColumn}
-          >
-            <Target className="w-3 h-3 mr-1" />
-            Column
-          </Button>
-        </div>
-        
-        {selectedColumn && (
-          <div className="space-y-2 pt-2 border-t">
-            <div className="text-xs text-slate-600">
-              Selected: Column lineage mode
-            </div>
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={focusOnSelection}
-                className="text-xs"
-              >
-                <Zap className="w-3 h-3 mr-1" />
-                Focus
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearSelection}
-                className="text-xs"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Clear
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Lineage Legend */}
       <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-3">
