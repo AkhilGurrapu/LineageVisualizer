@@ -134,7 +134,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         selectedColumn,
         highlightedColumns,
         onColumnSelect: handleColumnSelect,
-        isHighlighted: highlightedTables.has(table.id),
+        isHighlighted: false,
         lineageLevel: null,
         onExpand: (tableId: string, expanded: boolean) => {
           // Handle table expansion state
