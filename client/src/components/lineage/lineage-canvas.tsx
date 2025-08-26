@@ -254,36 +254,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
   return (
     <div className="w-full h-full relative" data-testid="lineage-canvas">
 
-      {/* Lineage Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-3">
-        <div className="text-xs font-semibold text-slate-700 mb-2">
-          Transformation Types
-        </div>
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-0.5 bg-blue-500"></div>
-            <span>Join</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-0.5 bg-purple-500" style={{ borderStyle: 'dashed' }}></div>
-            <span>Aggregation</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-0.5 bg-amber-500" style={{ borderStyle: 'dotted' }}></div>
-            <span>Filter</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-0.5 bg-red-500"></div>
-            <span>Union</span>
-          </div>
-          {lineageMode === 'column' && (
-            <div className="flex items-center space-x-2 pt-1 border-t">
-              <div className="w-4 h-1 bg-emerald-500"></div>
-              <span>Column Path</span>
-            </div>
-          )}
-        </div>
-      </div>
 
       <ReactFlow
         nodes={nodes}
@@ -310,7 +280,6 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
 
       <FileTree project={project} />
       <CanvasControls />
-      <MiniMap />
       
       {/* Column Lineage Panel */}
       {showLineagePanel && selectedColumn && (
