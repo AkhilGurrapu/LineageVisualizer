@@ -32,9 +32,9 @@ import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Target, GitBranch, Zap, RotateCcw, Info } from "lucide-react";
 
-const nodeTypes = useMemo(() => ({
+const nodeTypes = {
   table: EnhancedTableNode,
-}), []);
+};
 
 interface LineageCanvasProps {
   tables: Table[];
@@ -192,117 +192,68 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     });
   }, [tables, selectedColumn, highlightedColumns, highlightedTables, selectedTable, handleColumnSelect, generateNodePositions]);
 
-  // Enhanced edge styling for column lineage with dynamic effects
+  // Clean edge styling for better clarity
   const getEdgeStyle = useCallback((connection: TableLineage) => {
     const isHighlighted = highlightedTables.has(connection.sourceTableId) || 
                          highlightedTables.has(connection.targetTableId);
-    const isDirectPath = selectedTable && (connection.sourceTableId === selectedTable || connection.targetTableId === selectedTable);
     
     if (lineageMode === 'column' && isHighlighted) {
       return {
         stroke: '#3b82f6',
-        strokeWidth: 4,
-        strokeDasharray: '0',
-        filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
-      };
-    }
-    
-    if (isDirectPath) {
-      return {
-        stroke: '#10b981', // emerald-500 for direct connections
         strokeWidth: 3,
         strokeDasharray: '0',
-        filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.4))',
       };
     }
     
-    // Enhanced transformation type styling
+    // Simple, clean styling based on transformation type
     switch (connection.transformationType) {
       case 'join':
-        return { 
-          stroke: isHighlighted ? '#3b82f6' : '#60a5fa', 
-          strokeWidth: isHighlighted ? 3 : 2, 
-          strokeDasharray: '0',
-          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.3))' : 'none'
-        };
+        return { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '0' }; // blue
       case 'aggregation':
-        return { 
-          stroke: isHighlighted ? '#8b5cf6' : '#a78bfa', 
-          strokeWidth: isHighlighted ? 3 : 2, 
-          strokeDasharray: '6,4',
-          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' : 'none'
-        };
+        return { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '5,5' }; // purple
       case 'filter':
-        return { 
-          stroke: isHighlighted ? '#f59e0b' : '#fbbf24', 
-          strokeWidth: isHighlighted ? 3 : 2, 
-          strokeDasharray: '4,3',
-          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))' : 'none'
-        };
+        return { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '3,3' }; // amber
       case 'union':
-        return { 
-          stroke: isHighlighted ? '#ef4444' : '#f87171', 
-          strokeWidth: isHighlighted ? 3 : 2, 
-          strokeDasharray: '8,3',
-          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.3))' : 'none'
-        };
+        return { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '8,2' }; // red
       default:
-        return { 
-          stroke: isHighlighted ? '#6b7280' : '#9ca3af', 
-          strokeWidth: isHighlighted ? 3 : 2, 
-          strokeDasharray: '0',
-          filter: isHighlighted ? 'drop-shadow(0 0 3px rgba(107, 114, 128, 0.2))' : 'none'
-        };
+        return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: '0' }; // gray
     }
-  }, [lineageMode, highlightedTables, selectedTable]);
+  }, [lineageMode, highlightedTables]);
 
-  // Convert connections to React Flow edges with enhanced animations
+  // Convert connections to React Flow edges
   const initialEdges: Edge[] = useMemo(() => {
     return connections.map((connection) => {
       const edgeStyle = getEdgeStyle(connection);
       const isHighlighted = highlightedTables.has(connection.sourceTableId) || 
                            highlightedTables.has(connection.targetTableId);
-      const isDirectPath = selectedTable && (connection.sourceTableId === selectedTable || connection.targetTableId === selectedTable);
       
       return {
         id: connection.id,
         source: connection.sourceTableId,
         target: connection.targetTableId,
-        type: 'smoothstep', // Use smoothstep for more appealing curves
-        animated: isHighlighted || isDirectPath,
-        style: {
-          ...edgeStyle,
-          strokeLinecap: 'round',
-          strokeLinejoin: 'round',
-        },
+        type: 'default',
+        animated: isHighlighted && lineageMode === 'column',
+        style: edgeStyle,
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: edgeStyle.stroke,
-          width: 20,
-          height: 20,
         },
         data: {
           transformationType: connection.transformationType,
-          isHighlighted,
-          isDirectPath
+          isHighlighted
         },
-        label: (lineageMode === 'column' && isHighlighted) || isDirectPath ? connection.transformationType : '',
+        label: lineageMode === 'column' && isHighlighted ? connection.transformationType : '',
         labelStyle: { 
-          fontSize: 13, 
-          fontWeight: 700,
+          fontSize: 12, 
+          fontWeight: 600,
           fill: edgeStyle.stroke,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          border: `1px solid ${edgeStyle.stroke}`,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-        },
-        labelBgPadding: [8, 4],
-        labelBgBorderRadius: 6,
-        className: isHighlighted ? 'highlighted-edge' : ''
+          backgroundColor: 'white',
+          padding: '2px 4px',
+          borderRadius: '4px'
+        }
       };
     });
-  }, [connections, getEdgeStyle, highlightedTables, lineageMode, selectedTable]);
+  }, [connections, getEdgeStyle, highlightedTables, lineageMode]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -363,31 +314,17 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         nodeTypes={nodeTypes}
         fitView
         attributionPosition={undefined}
-        className="bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100"
+        className="bg-slate-50"
         minZoom={0.1}
-        maxZoom={3}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
-        snapToGrid={true}
-        snapGrid={[20, 20]}
-        connectionLineStyle={{
-          strokeWidth: 3,
-          stroke: '#3b82f6',
-          strokeDasharray: '5,5',
-        }}
-        deleteKeyCode={null} // Disable delete to prevent accidental deletions
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
       >
         <Background 
-          color="#cbd5e1" 
-          gap={25} 
-          size={1.5}
-          variant="dots"
+          color="#e2e8f0" 
+          gap={20} 
+          size={1}
         />
-        <Controls 
-          showZoom={true}
-          showFitView={true}
-          showInteractive={true}
-          position="bottom-left"
-        />
+        <Controls />
       </ReactFlow>
 
       <FileTree project={project} />
