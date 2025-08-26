@@ -29,10 +29,19 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
     enabled: isExpanded,
   });
 
-  const handleToggleExpand = useCallback(() => {
+  const handleToggleExpand = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
     data.onExpand?.(table.id, newExpanded);
+  }, [isExpanded, table.id, data]);
+
+  const handleNodeClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isExpanded) {
+      setIsExpanded(true);
+      data.onExpand?.(table.id, true);
+    }
   }, [isExpanded, table.id, data]);
 
   const handleColumnClick = useCallback((columnId: string) => {
@@ -64,15 +73,6 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
   };
 
   const getHighlightStyle = () => {
-    if (lineageLevel === 'source') {
-      return 'ring-4 ring-emerald-400 shadow-2xl scale-105';
-    }
-    if (lineageLevel === 'target') {
-      return 'ring-2 ring-blue-400 shadow-lg';
-    }
-    if (isHighlighted) {
-      return 'ring-2 ring-purple-400 shadow-lg';
-    }
     if (selected) {
       return 'ring-2 ring-blue-500 shadow-lg';
     }
@@ -105,7 +105,10 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
   }
 
   return (
-    <div className={`bg-white border rounded-lg shadow-sm min-w-[280px] max-w-[400px] ${getHighlightStyle()}`}>
+    <div 
+      className={`bg-white border rounded-lg shadow-sm min-w-[280px] max-w-[400px] cursor-pointer ${getHighlightStyle()}`}
+      onClick={handleNodeClick}
+    >
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
       
@@ -154,9 +157,9 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
           {table.rowCount && <span>{table.rowCount.toLocaleString()} rows</span>}
         </div>
 
-        {table.tags && table.tags.length > 0 && (
+        {Array.isArray(table.tags) && table.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {table.tags.slice(0, 3).map((tag, index) => (
+            {table.tags.slice(0, 3).map((tag: string, index: number) => (
               <Badge key={index} variant="secondary" className="text-xs">
                 <Tag className="w-2 h-2 mr-1" />
                 {tag}
@@ -190,13 +193,16 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
                 return (
                   <div
                     key={column.id}
-                    onClick={() => handleColumnClick(column.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleColumnClick(column.id);
+                    }}
                     className={`
                       p-2 rounded cursor-pointer text-xs transition-all duration-150
                       ${isColumnSelected 
-                        ? 'bg-emerald-100 border border-emerald-300 ring-1 ring-emerald-400' 
+                        ? 'bg-blue-100 border border-blue-300 ring-1 ring-blue-400' 
                         : isColumnHighlighted 
-                        ? 'bg-blue-50 border border-blue-200' 
+                        ? 'bg-slate-100 border border-slate-200' 
                         : 'hover:bg-slate-50 border border-transparent'
                       }
                     `}

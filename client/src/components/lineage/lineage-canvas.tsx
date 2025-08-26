@@ -49,6 +49,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
   const [highlightedTables, setHighlightedTables] = useState<Set<string>>(new Set());
   const [lineageMode, setLineageMode] = useState<'table' | 'column'>('table');
   const [showLineagePanel, setShowLineagePanel] = useState(false);
+  const [lineagePanelPosition, setLineagePanelPosition] = useState<{ x: number; y: number } | undefined>(undefined);
   const [showFileTree, setShowFileTree] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [autoLayout, setAutoLayout] = useState(true);
@@ -66,11 +67,16 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
   });
 
   // Handle column selection and lineage triaging
-  const handleColumnSelect = useCallback(async (columnId: string, tableId: string) => {
+  const handleColumnSelect = useCallback(async (columnId: string, tableId: string, event?: MouseEvent) => {
     setSelectedColumn(columnId);
     setSelectedTable(tableId);
     setLineageMode('column');
     setShowLineagePanel(true);
+    
+    // Position panel near the mouse click if event is provided
+    if (event) {
+      setLineagePanelPosition({ x: event.clientX, y: event.clientY });
+    }
 
     try {
       // Fetch upstream and downstream lineage for the selected column
@@ -113,6 +119,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setHighlightedTables(new Set());
     setLineageMode('table');
     setShowLineagePanel(false);
+    setLineagePanelPosition(undefined);
   }, []);
 
   // Convert tables to React Flow nodes with enhanced data
@@ -128,8 +135,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         highlightedColumns,
         onColumnSelect: handleColumnSelect,
         isHighlighted: highlightedTables.has(table.id),
-        lineageLevel: selectedTable === table.id ? 'source' : 
-                     highlightedTables.has(table.id) ? 'target' : null,
+        lineageLevel: null,
         onExpand: (tableId: string, expanded: boolean) => {
           // Handle table expansion state
           console.log(`Table ${tableId} ${expanded ? 'expanded' : 'collapsed'}`);
@@ -145,8 +151,8 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     
     if (lineageMode === 'column' && isHighlighted) {
       return {
-        stroke: '#10b981', // emerald-500
-        strokeWidth: 4,
+        stroke: '#3b82f6', // blue-500
+        strokeWidth: 3,
         strokeDasharray: '0',
       };
     }
@@ -366,7 +372,11 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         <ColumnLineagePanel
           columnId={selectedColumn}
           tableId={selectedTable}
-          onClose={() => setShowLineagePanel(false)}
+          position={lineagePanelPosition}
+          onClose={() => {
+            setShowLineagePanel(false);
+            setLineagePanelPosition(undefined);
+          }}
         />
       )}
     </div>
