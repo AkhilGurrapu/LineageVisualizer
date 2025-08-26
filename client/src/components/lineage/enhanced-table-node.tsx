@@ -190,11 +190,20 @@ export default memo(function EnhancedTableNode({ data, selected }: EnhancedTable
       {/* Expanded Columns Section */}
       {isExpanded && (
         <div 
-          className="p-5 max-h-80 overflow-y-auto"
+          className="p-5 max-h-60 overflow-y-auto border-t column-scroll-container"
           onWheel={(e) => {
+            // Prevent React Flow from capturing scroll events
             e.stopPropagation();
           }}
           onMouseDown={(e) => {
+            // Prevent node dragging when interacting with scroll area
+            e.stopPropagation();
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+          }}
+          onScroll={(e) => {
+            // Also prevent scroll events from bubbling
             e.stopPropagation();
           }}
         >
