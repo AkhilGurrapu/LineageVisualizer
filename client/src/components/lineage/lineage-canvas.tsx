@@ -290,6 +290,36 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     []
   );
 
+  // Handle edge clicks to show relationship details
+  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation();
+    console.log('Edge clicked:', edge);
+    
+    // Find the connection data
+    const connection = connections.find(conn => conn.id === edge.id);
+    if (connection) {
+      // Highlight the connected tables
+      const highlightedTabs = new Set([connection.sourceTableId, connection.targetTableId]);
+      setHighlightedTables(highlightedTabs);
+      
+      // Show transformation type in console for now
+      console.log(`Relationship: ${connection.transformationType} from ${connection.sourceTableId} to ${connection.targetTableId}`);
+      
+      // Find the nodes for the connected tables
+      const sourceNode = nodes.find(n => n.id === connection.sourceTableId);
+      const targetNode = nodes.find(n => n.id === connection.targetTableId);
+      
+      if (sourceNode && targetNode && reactFlowInstance) {
+        // Calculate center point between the two nodes
+        const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
+        const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+        
+        // Focus on the relationship
+        reactFlowInstance.setCenter(centerX, centerY, { zoom: 1.0 });
+      }
+    }
+  }, [connections, nodes, reactFlowInstance]);
+
   // Focus on selected table/column
   const focusOnSelection = useCallback(() => {
     if (selectedTable && reactFlowInstance) {
@@ -311,6 +341,7 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
+        onEdgeClick={onEdgeClick}
         nodeTypes={nodeTypes}
         fitView
         attributionPosition={undefined}
