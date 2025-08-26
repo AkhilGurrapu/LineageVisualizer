@@ -77,10 +77,19 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     if (reactFlowInstance && tableId) {
       const node = reactFlowInstance.getNode(tableId);
       if (node) {
-        // Convert node position to screen coordinates
+        // Get node element to determine actual size
+        const nodeElement = document.querySelector(`[data-id="${tableId}"]`);
+        let nodeWidth = 250; // Default width
+        
+        if (nodeElement) {
+          const rect = nodeElement.getBoundingClientRect();
+          nodeWidth = rect.width;
+        }
+        
+        // Convert node position to screen coordinates - anchor to top-right corner
         const nodeScreenPosition = reactFlowInstance.flowToScreenPosition({
-          x: node.position.x + 300, // Offset to the right of the node
-          y: node.position.y - 20   // Slightly above the node
+          x: node.position.x + nodeWidth + 10, // Right edge + small gap
+          y: node.position.y - 10               // Top edge with small offset
         });
         setLineagePanelPosition({ 
           x: nodeScreenPosition.x, 
