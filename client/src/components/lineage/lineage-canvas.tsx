@@ -32,9 +32,9 @@ import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Target, GitBranch, Zap, RotateCcw, Info } from "lucide-react";
 
-const nodeTypes = {
+const nodeTypes = useMemo(() => ({
   table: EnhancedTableNode,
-};
+}), []);
 
 interface LineageCanvasProps {
   tables: Table[];
@@ -131,89 +131,178 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
     setLineagePanelPosition(undefined);
   }, []);
 
+  // Generate dynamic node positions with better spacing
+  const generateNodePositions = useCallback((tables: Table[]) => {
+    const nodesWithoutPosition = tables.filter(table => !table.position);
+    
+    if (nodesWithoutPosition.length === 0) return tables;
+    
+    // Advanced grid layout with dynamic spacing
+    const cols = Math.ceil(Math.sqrt(tables.length));
+    const baseSpacing = { x: 400, y: 300 }; // Increased spacing for better visual appeal
+    const padding = { x: 100, y: 100 };
+    
+    return tables.map((table, index) => {
+      if (table.position) return table;
+      
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      
+      // Add some randomness and spacing variation for organic feel
+      const jitterX = (Math.random() - 0.5) * 50;
+      const jitterY = (Math.random() - 0.5) * 50;
+      
+      return {
+        ...table,
+        position: {
+          x: padding.x + col * baseSpacing.x + jitterX,
+          y: padding.y + row * baseSpacing.y + jitterY
+        }
+      };
+    });
+  }, []);
+
   // Convert tables to React Flow nodes with enhanced data
   const initialNodes: Node[] = useMemo(() => {
-    return tables.map((table) => ({
-      id: table.id,
-      type: 'table',
-      position: table.position ? table.position as { x: number; y: number } : { x: 0, y: 0 },
-      data: { 
-        table,
-        isConnectable: true,
-        selectedColumn,
-        highlightedColumns,
-        onColumnSelect: handleColumnSelect,
-        isHighlighted: false,
-        lineageLevel: null,
-        onExpand: (tableId: string, expanded: boolean) => {
-          // Handle table expansion state
-          console.log(`Table ${tableId} ${expanded ? 'expanded' : 'collapsed'}`);
-        }
-      },
-    }));
-  }, [tables, selectedColumn, highlightedColumns, highlightedTables, selectedTable, handleColumnSelect]);
+    const positionedTables = generateNodePositions(tables);
+    
+    return positionedTables.map((table) => {
+      const isHighlighted = highlightedTables.has(table.id);
+      const isSelected = selectedTable === table.id;
+      
+      return {
+        id: table.id,
+        type: 'table',
+        position: table.position as { x: number; y: number },
+        data: { 
+          table,
+          isConnectable: true,
+          selectedColumn,
+          highlightedColumns,
+          onColumnSelect: handleColumnSelect,
+          isHighlighted,
+          lineageLevel: isHighlighted ? (selectedTable === table.id ? null : 'connected') : null,
+          onExpand: (tableId: string, expanded: boolean) => {
+            console.log(`Table ${tableId} ${expanded ? 'expanded' : 'collapsed'}`);
+          }
+        },
+        selected: isSelected,
+        className: isHighlighted ? 'highlighted-node' : '',
+      };
+    });
+  }, [tables, selectedColumn, highlightedColumns, highlightedTables, selectedTable, handleColumnSelect, generateNodePositions]);
 
-  // Enhanced edge styling for column lineage
+  // Enhanced edge styling for column lineage with dynamic effects
   const getEdgeStyle = useCallback((connection: TableLineage) => {
     const isHighlighted = highlightedTables.has(connection.sourceTableId) || 
                          highlightedTables.has(connection.targetTableId);
+    const isDirectPath = selectedTable && (connection.sourceTableId === selectedTable || connection.targetTableId === selectedTable);
     
     if (lineageMode === 'column' && isHighlighted) {
       return {
-        stroke: '#3b82f6', // blue-500
-        strokeWidth: 3,
+        stroke: '#3b82f6',
+        strokeWidth: 4,
         strokeDasharray: '0',
+        filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))',
       };
     }
     
+    if (isDirectPath) {
+      return {
+        stroke: '#10b981', // emerald-500 for direct connections
+        strokeWidth: 3,
+        strokeDasharray: '0',
+        filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.4))',
+      };
+    }
+    
+    // Enhanced transformation type styling
     switch (connection.transformationType) {
       case 'join':
-        return { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '0' }; // blue
+        return { 
+          stroke: isHighlighted ? '#3b82f6' : '#60a5fa', 
+          strokeWidth: isHighlighted ? 3 : 2, 
+          strokeDasharray: '0',
+          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.3))' : 'none'
+        };
       case 'aggregation':
-        return { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '5,5' }; // purple
+        return { 
+          stroke: isHighlighted ? '#8b5cf6' : '#a78bfa', 
+          strokeWidth: isHighlighted ? 3 : 2, 
+          strokeDasharray: '6,4',
+          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' : 'none'
+        };
       case 'filter':
-        return { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '3,3' }; // amber
+        return { 
+          stroke: isHighlighted ? '#f59e0b' : '#fbbf24', 
+          strokeWidth: isHighlighted ? 3 : 2, 
+          strokeDasharray: '4,3',
+          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))' : 'none'
+        };
       case 'union':
-        return { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '8,2' }; // red
+        return { 
+          stroke: isHighlighted ? '#ef4444' : '#f87171', 
+          strokeWidth: isHighlighted ? 3 : 2, 
+          strokeDasharray: '8,3',
+          filter: isHighlighted ? 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.3))' : 'none'
+        };
       default:
-        return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: '0' }; // gray
+        return { 
+          stroke: isHighlighted ? '#6b7280' : '#9ca3af', 
+          strokeWidth: isHighlighted ? 3 : 2, 
+          strokeDasharray: '0',
+          filter: isHighlighted ? 'drop-shadow(0 0 3px rgba(107, 114, 128, 0.2))' : 'none'
+        };
     }
-  }, [lineageMode, highlightedTables]);
+  }, [lineageMode, highlightedTables, selectedTable]);
 
-  // Convert connections to React Flow edges
+  // Convert connections to React Flow edges with enhanced animations
   const initialEdges: Edge[] = useMemo(() => {
     return connections.map((connection) => {
       const edgeStyle = getEdgeStyle(connection);
       const isHighlighted = highlightedTables.has(connection.sourceTableId) || 
                            highlightedTables.has(connection.targetTableId);
+      const isDirectPath = selectedTable && (connection.sourceTableId === selectedTable || connection.targetTableId === selectedTable);
       
       return {
         id: connection.id,
         source: connection.sourceTableId,
         target: connection.targetTableId,
-        type: 'default',
-        animated: isHighlighted && lineageMode === 'column',
-        style: edgeStyle,
+        type: 'smoothstep', // Use smoothstep for more appealing curves
+        animated: isHighlighted || isDirectPath,
+        style: {
+          ...edgeStyle,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: edgeStyle.stroke,
+          width: 20,
+          height: 20,
         },
         data: {
           transformationType: connection.transformationType,
-          isHighlighted
+          isHighlighted,
+          isDirectPath
         },
-        label: lineageMode === 'column' && isHighlighted ? connection.transformationType : '',
+        label: (lineageMode === 'column' && isHighlighted) || isDirectPath ? connection.transformationType : '',
         labelStyle: { 
-          fontSize: 12, 
-          fontWeight: 600,
+          fontSize: 13, 
+          fontWeight: 700,
           fill: edgeStyle.stroke,
-          backgroundColor: 'white',
-          padding: '2px 4px',
-          borderRadius: '4px'
-        }
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          border: `1px solid ${edgeStyle.stroke}`,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        },
+        labelBgPadding: [8, 4],
+        labelBgBorderRadius: 6,
+        className: isHighlighted ? 'highlighted-edge' : ''
       };
     });
-  }, [connections, getEdgeStyle, highlightedTables, lineageMode]);
+  }, [connections, getEdgeStyle, highlightedTables, lineageMode, selectedTable]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -274,17 +363,31 @@ function LineageCanvasInner({ tables, connections, project }: LineageCanvasProps
         nodeTypes={nodeTypes}
         fitView
         attributionPosition={undefined}
-        className="bg-slate-50"
+        className="bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100"
         minZoom={0.1}
-        maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        maxZoom={3}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+        snapToGrid={true}
+        snapGrid={[20, 20]}
+        connectionLineStyle={{
+          strokeWidth: 3,
+          stroke: '#3b82f6',
+          strokeDasharray: '5,5',
+        }}
+        deleteKeyCode={null} // Disable delete to prevent accidental deletions
       >
         <Background 
-          color="#e2e8f0" 
-          gap={20} 
-          size={1}
+          color="#cbd5e1" 
+          gap={25} 
+          size={1.5}
+          variant="dots"
         />
-        <Controls />
+        <Controls 
+          showZoom={true}
+          showFitView={true}
+          showInteractive={true}
+          position="bottom-left"
+        />
       </ReactFlow>
 
       <FileTree project={project} />
